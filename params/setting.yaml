@@ -1,0 +1,5 @@
+height: '250'
+input_dir: /home/jon/jonsuff-workspace/ImageShrinker/sample_images
+output_dir: /home/jon/jonsuff-workspace/ImageShrinker/result_images
+show_process: true
+width: '250'

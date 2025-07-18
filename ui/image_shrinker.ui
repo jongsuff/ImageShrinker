@@ -40,7 +40,7 @@
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>20</y>
+        <y>10</y>
         <width>261</width>
         <height>81</height>
        </rect>
@@ -53,7 +53,7 @@
       <property name="geometry">
        <rect>
         <x>580</x>
-        <y>20</y>
+        <y>10</y>
         <width>261</width>
         <height>81</height>
        </rect>
@@ -66,7 +66,7 @@
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>140</y>
+        <y>130</y>
         <width>721</width>
         <height>23</height>
        </rect>
@@ -79,7 +79,7 @@
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>210</y>
+        <y>190</y>
         <width>320</width>
         <height>320</height>
        </rect>
@@ -89,7 +89,7 @@
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>190</y>
+        <y>170</y>
         <width>111</width>
         <height>17</height>
        </rect>
@@ -102,7 +102,7 @@
       <property name="geometry">
        <rect>
         <x>520</x>
-        <y>190</y>
+        <y>170</y>
         <width>111</width>
         <height>17</height>
        </rect>
@@ -115,9 +115,9 @@
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>570</y>
+        <y>550</y>
         <width>721</width>
-        <height>81</height>
+        <height>131</height>
        </rect>
       </property>
      </widget>
@@ -125,7 +125,7 @@
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>550</y>
+        <y>530</y>
         <width>67</width>
         <height>17</height>
        </rect>
@@ -138,7 +138,7 @@
       <property name="geometry">
        <rect>
         <x>520</x>
-        <y>210</y>
+        <y>190</y>
         <width>320</width>
         <height>320</height>
        </rect>
@@ -148,7 +148,7 @@
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>120</y>
+        <y>110</y>
         <width>111</width>
         <height>17</height>
        </rect>
@@ -287,7 +287,7 @@
       <property name="geometry">
        <rect>
         <x>300</x>
-        <y>410</y>
+        <y>460</y>
         <width>351</width>
         <height>51</height>
        </rect>
@@ -321,6 +321,59 @@
       <property name="text">
        <string>변환 과정 시각화:</string>
       </property>
+     </widget>
+     <widget class="QLabel" name="labelImageHeight_3">
+      <property name="geometry">
+       <rect>
+        <x>40</x>
+        <y>380</y>
+        <width>151</width>
+        <height>17</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>정사각형 보정 방식:</string>
+      </property>
+     </widget>
+     <widget class="QWidget" name="">
+      <property name="geometry">
+       <rect>
+        <x>200</x>
+        <y>380</y>
+        <width>644</width>
+        <height>30</height>
+       </rect>
+      </property>
+      <layout class="QHBoxLayout" name="LayoutAdjustSquare">
+       <item>
+        <widget class="QRadioButton" name="radioButtonPaddingWhite">
+         <property name="text">
+          <string>여백 채우기(흰색)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="radioButtonPaddingBg">
+         <property name="text">
+          <string>여백 채우기(배경색)</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="radioButtonCrop">
+         <property name="text">
+          <string>중앙에 맞춰 자르기</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QRadioButton" name="radioButtonResize">
+         <property name="text">
+          <string>보정 없음(찌그러질 수 있음)</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </widget>
     </widget>
    </widget>

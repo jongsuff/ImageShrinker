@@ -1,42 +1,77 @@
-ï»¿@echo off
-setlocal
+@echo off
+setlocal enabledelayedexpansion
 
-set PY_VER=3.10.11
-set PY_DIR=%cd%\python
+:: È¯°æº¯¼ö ÃÊ±âÈ­
+set PYTHONHOME=
+set PYTHONPATH=
+set PATH=%SystemRoot%\system32;%SystemRoot%;%SystemRoot%\System32\Wbem
+
+:: °æ·Î ¼³Á¤
 set VENV_DIR=%cd%\venv
-set IMAGE_WS=%cd%\workspace
 set IMAGE_EXE=%cd%\dist\ImageShrinker.exe
 set ICON_FILE=%cd%\icon\run.ico
 set SHORTCUT_NAME=ImageShrinker.lnk
 set DESKTOP=%USERPROFILE%\Desktop
 
-echo.
-echo [1/6] Python ì„¤ì¹˜ í™•ì¸ ì¤‘...
-if not exist "%PY_DIR%\python.exe" (
-    echo [1/6] Python ì„¤ì¹˜ ì¤‘...
-    python-%PY_VER%-amd64.exe /quiet InstallAllUsers=0 TargetDir=%PY_DIR% PrependPath=0 Include_test=0
+echo [1/6] Python ¼³Ä¡ È®ÀÎ Áß...
+py -V >nul 2>&1
+if errorlevel 1 (
+    echo [¿À·ù] py ¸í·ÉÀÌ Á¸ÀçÇÏÁö ¾Ê½À´Ï´Ù. PythonÀÌ ¼³Ä¡µÇ¾î ÀÖ´ÂÁö È®ÀÎÇÏ¼¼¿ä.
+    pause
+    exit /b
 )
 
 echo.
-echo [2/6] ê°€ìƒí™˜ê²½ ìƒì„± ì¤‘...
-"%PY_DIR%\python.exe" -m venv "%VENV_DIR%"
+echo [2/6] ±âÁ¸ °¡»óÈ¯°æ Á¦°Å Áß...
+if exist "%VENV_DIR%" (
+    echo ±âÁ¸ °¡»óÈ¯°æÀ» »èÁ¦ÇÕ´Ï´Ù...
+    rmdir /s /q "%VENV_DIR%"
+)
 
 echo.
-echo [3/6] ê°€ìƒí™˜ê²½ í™œì„±í™” ë° ë¼ì´ë¸ŒëŸ¬ë¦¬ ì„¤ì¹˜ ì¤‘...
+echo [3/6] °¡»óÈ¯°æ »ı¼º Áß...
+py -m venv "%VENV_DIR%" || (
+    echo [¿À·ù] °¡»óÈ¯°æ »ı¼º ½ÇÆĞ
+    pause
+    exit /b
+)
+
+echo.
+echo [4/6] °¡»óÈ¯°æ È°¼ºÈ­ ¹× ÆĞÅ°Áö ¼³Ä¡ Áß...
 call "%VENV_DIR%\Scripts\activate.bat"
-pip install --upgrade pip
-pip install -r requirements.txt
+
+echo pip, setuptools, wheel ¾÷±×·¹ÀÌµå Áß...
+call python -m pip install --upgrade pip setuptools wheel
+
+:: Áß¿ä: numpy ´Ù¿î±×·¹ÀÌµå (2.x ºñÈ£È¯ ÇØ°á)
+echo numpy ¼³Ä¡ Áß (1.x·Î ´Ù¿î±×·¹ÀÌµå)...
+call pip install "numpy<2.0.0" --force-reinstall --only-binary=:all:
+
+:: PyQt6 + Qt6 DLL ¹öÀü ÀÏÄ¡ ¼³Ä¡
+echo PyQt6 °ü·Ã ÆĞÅ°Áö ¼³Ä¡ Áß (¹öÀü °íÁ¤)...
+call pip install pyqt6==6.5.2 pyqt6-qt6==6.5.2 pyqt6-sip==13.5.2
+
+:: ³ª¸ÓÁö ÇÊ¼ö ÆĞÅ°Áö ¼³Ä¡
+echo ±âÅ¸ ÆĞÅ°Áö ¼³Ä¡ Áß...
+call pip install opencv-python==4.9.0.80 pyyaml pyinstaller
 
 echo.
-echo [4/6] PyInstallerë¡œ ë¹Œë“œ ì¤‘...
-pyinstaller --onefile --icon="%ICON_FILE%" --console --add-data "ui/image_shrinker.ui;ui" ImageShrinker.py
+echo [5/6] PyInstaller·Î ºôµå Áß...
+call pyinstaller --noconfirm --onefile --console ^
+  --icon="%ICON_FILE%" ^
+  --add-data "ui/image_shrinker.ui;ui" ^
+  --collect-all numpy ^
+  --collect-all PyQt6 ^
+  ImageShrinker.py
+
+if not exist "%IMAGE_EXE%" (
+    echo [¿À·ù] ºôµå ½ÇÆĞ: ½ÇÇà ÆÄÀÏÀÌ »ı¼ºµÇÁö ¾Ê¾Ò½À´Ï´Ù.
+    pause
+    exit /b
+)
 
 echo.
-echo [5/6] í™˜ê²½ ë³€ìˆ˜ ì„¤ì •...
-setx IMAGESHRINKER_WS "%IMAGE_WS%" > nul
-
-echo.
-echo [6/6] ë°”íƒ•í™”ë©´ì— ë°”ë¡œê°€ê¸° ìƒì„±...
+echo [6/6] ¹ÙÅÁÈ­¸é¿¡ ¹Ù·Î°¡±â »ı¼º Áß...
 set VBS=%TEMP%\create_shortcut.vbs
 > "%VBS%" echo Set oWS = CreateObject("WScript.Shell")
 >> "%VBS%" echo sLinkFile = "%DESKTOP%\%SHORTCUT_NAME%"
@@ -46,9 +81,9 @@ set VBS=%TEMP%\create_shortcut.vbs
 >> "%VBS%" echo oLink.IconLocation = "%ICON_FILE%"
 >> "%VBS%" echo oLink.Save
 
-cscript //nologo "%VBS%"
+cscript //nologo "%VBS%" >nul
 del "%VBS%"
 
 echo.
-echo ì„¤ì¹˜ ë° ë¹Œë“œ ì™„ë£Œ! ë°”íƒ•í™”ë©´ì˜ ë°”ë¡œê°€ê¸° ì•„ì´ì½˜ìœ¼ë¡œ ì‹¤í–‰í•˜ì„¸ìš”.
+echo ¼³Ä¡ ¹× ºôµå ¿Ï·á! ¹ÙÅÁÈ­¸é¿¡¼­ ½ÇÇàÇÏ¼¼¿ä.
 pause

@@ -7,18 +7,18 @@ import cv2
 import numpy as np
 
 from PyQt6.QtCore import Qt
+from PyQt6 import uic
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QFileDialog, QMessageBox, QGraphicsScene, QGraphicsPixmapItem
 )
 from PyQt6.QtGui import QPixmap, QImage
-from PyQt6.uic import loadUi
 
 
 def get_base_dir():
-    """실행 기준 workspace 경로를 반환"""
+    """실행 기준 workspace 경로 반환"""
     if "IMAGESHRINKER_WS" in os.environ:
         return os.environ["IMAGESHRINKER_WS"]
-    elif hasattr(sys, "_MEIPASS"):
+    elif getattr(sys, 'frozen', False):
         return sys._MEIPASS
     else:
         return os.path.abspath(".")
@@ -32,13 +32,14 @@ def resource_path(relative_path):
 class ImageShrinkerUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        loadUi(resource_path("ui/image_shrinker.ui"), self)
 
-        self.actionViewMain.triggered.connect(
-            lambda: self.stackedWidget.setCurrentWidget(self.page_3))
-        self.actionViewPreferences.triggered.connect(
-            lambda: self.stackedWidget.setCurrentWidget(self.page_4))
+        base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(__file__)
+        ui_path = os.path.join(base_path, "ui", "image_shrinker.ui")
+        uic.loadUi(ui_path, self)
 
+        # UI 연결
+        self.actionViewMain.triggered.connect(lambda: self.stackedWidget.setCurrentWidget(self.page_3))
+        self.actionViewPreferences.triggered.connect(lambda: self.stackedWidget.setCurrentWidget(self.page_4))
         self.loadImage.clicked.connect(self.load_images)
         self.convertImage.clicked.connect(self.convert_images)
         self.browseOriginalDir.clicked.connect(self.select_input_dir)
@@ -73,8 +74,7 @@ class ImageShrinkerUI(QMainWindow):
         self.progressBar.setMaximum(total if total > 0 else 1)
         self.progressBar.setValue(0)
         self.progressBar.setFormat(f"0/{total} (%p%)")
-        self.logBrowser.append(
-            f"총 {total}개의 이미지가 발견되었습니다." if total > 0 else "이미지가 없습니다.")
+        self.logBrowser.append(f"총 {total}개의 이미지가 발견되었습니다." if total > 0 else "이미지가 없습니다.")
 
     def convert_images(self):
         width = int(self.imageWidth.text()) if self.imageWidth.text().isdigit() else 256
@@ -85,7 +85,9 @@ class ImageShrinkerUI(QMainWindow):
         total = len(self.image_paths)
         for i, path in enumerate(self.image_paths):
             img = cv2.imread(path)
-            h, w = img.shape[:2]
+            if img is None:
+                self.logBrowser.append(f"이미지 로드 실패: {path}")
+                continue
 
             method = self.get_resize_method()
 
@@ -99,13 +101,14 @@ class ImageShrinkerUI(QMainWindow):
                 padded = cv2.resize(img, (width, height), interpolation=cv2.INTER_AREA)
 
             resized = cv2.resize(padded, (width, height), interpolation=cv2.INTER_AREA)
-            filename = os.path.basename(path)
             filename_wo_ext = os.path.splitext(os.path.basename(path))[0]
             result_path = os.path.join(output_dir, f"{filename_wo_ext}.jpg")
             cv2.imwrite(result_path, resized, [cv2.IMWRITE_JPEG_QUALITY, 95])
 
             self.update_progress(
-                i + 1, total, filename, self.cv2_to_qimage(img), self.cv2_to_qimage(resized))
+                i + 1, total, os.path.basename(path),
+                self.cv2_to_qimage(img), self.cv2_to_qimage(resized)
+            )
 
             if self.checkBox.isChecked():
                 QApplication.processEvents()
@@ -124,14 +127,9 @@ class ImageShrinkerUI(QMainWindow):
 
     def add_color_padding(self, img):
         h, w = img.shape[:2]
-        corners = [
-            img[0:10, 0:10],
-            img[0:10, -10:],
-            img[-10:, 0:10],
-            img[-10:, -10:]
-        ]
+        corners = [img[0:10, 0:10], img[0:10, -10:], img[-10:, 0:10], img[-10:, -10:]]
         avgs = [np.mean(corner, axis=(0, 1)) for corner in corners]
-        max_diff = np.max([np.abs(avgs[0] - avg).max() for avg in avgs[1:]])
+        max_diff = max([np.max(np.abs(avgs[0] - avg)) for avg in avgs[1:]])
         color = [255, 255, 255] if max_diff > 10 else [int(c) for c in np.mean(avgs, axis=0)]
         return self.add_padding(img, color)
 
@@ -213,7 +211,7 @@ class ImageShrinkerUI(QMainWindow):
             "padding_bg": "radioButtonPaddingBg",
             "crop": "radioButtonCrop",
             "resize": "radioButtonResize"
-        }[method]).setChecked(True)
+        }.get(method, "radioButtonResize")).setChecked(True)
 
         self.logBrowser.append("설정 파일 로드 완료:")
         self.logBrowser.append(f"  원본 이미지 경로: {data.get('input_dir', '')}")
@@ -227,8 +225,7 @@ class ImageShrinkerUI(QMainWindow):
             "crop": "중앙에 맞춰 자르기",
             "resize": "보정 없음(찌그러질 수 있음)"
         }
-        self.logBrowser.append(
-            f"  정사각형 보정 방식: {method_labels.get(method, '알 수 없음')}")
+        self.logBrowser.append(f"  정사각형 보정 방식: {method_labels.get(method, '알 수 없음')}")
 
 
 if __name__ == "__main__":

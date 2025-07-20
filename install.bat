@@ -40,19 +40,16 @@ echo.
 echo [4/6] 가상환경 활성화 및 패키지 설치 중...
 call "%VENV_DIR%\Scripts\activate.bat"
 
-echo pip, setuptools, wheel 업그레이드 중...
+:: pip 업그레이드
 call python -m pip install --upgrade pip setuptools wheel
 
-:: 중요: numpy 다운그레이드 (2.x 비호환 해결)
-echo numpy 설치 중 (1.x로 다운그레이드)...
+:: numpy 다운그레이드 (필수)
 call pip install "numpy<2.0.0" --force-reinstall --only-binary=:all:
 
-:: PyQt6 + Qt6 DLL 버전 일치 설치
-echo PyQt6 관련 패키지 설치 중 (버전 고정)...
+:: PyQt6 버전 고정 (DLL 충돌 방지)
 call pip install pyqt6==6.5.2 pyqt6-qt6==6.5.2 pyqt6-sip==13.5.2
 
-:: 나머지 필수 패키지 설치
-echo 기타 패키지 설치 중...
+:: 필수 패키지 설치
 call pip install opencv-python==4.9.0.80 pyyaml pyinstaller
 
 echo.

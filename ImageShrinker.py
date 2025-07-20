@@ -13,31 +13,16 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtGui import QPixmap, QImage
 
-
-def get_base_dir():
-    """실행 기준 workspace 경로 반환"""
-    if "IMAGESHRINKER_WS" in os.environ:
-        return os.environ["IMAGESHRINKER_WS"]
-    elif getattr(sys, 'frozen', False):
-        return sys._MEIPASS
-    else:
-        return os.path.abspath(".")
-
-
-def resource_path(relative_path):
-    """base_dir 기준 상대경로 생성"""
-    return os.path.join(get_base_dir(), relative_path)
-
+def resource_path(*paths):
+    return os.path.join(os.getcwd(), *paths)  # 실행 기준 경로로 고정
 
 class ImageShrinkerUI(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        base_path = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(__file__)
-        ui_path = os.path.join(base_path, "ui", "image_shrinker.ui")
+        ui_path = resource_path("ui", "image_shrinker.ui")
         uic.loadUi(ui_path, self)
 
-        # UI 연결
         self.actionViewMain.triggered.connect(lambda: self.stackedWidget.setCurrentWidget(self.page_3))
         self.actionViewPreferences.triggered.connect(lambda: self.stackedWidget.setCurrentWidget(self.page_4))
         self.loadImage.clicked.connect(self.load_images)
@@ -53,12 +38,12 @@ class ImageShrinkerUI(QMainWindow):
         self.load_settings()
 
     def select_input_dir(self):
-        folder = QFileDialog.getExistingDirectory(self, "원본 이미지 폴더 선택", "./")
+        folder = QFileDialog.getExistingDirectory(self, "원본 이미지 폴더 선택", ".")
         if folder:
             self.dirOriginal.setText(folder)
 
     def select_output_dir(self):
-        folder = QFileDialog.getExistingDirectory(self, "결과 이미지 폴더 선택", "./")
+        folder = QFileDialog.getExistingDirectory(self, "결과 이미지 폴더 선택", ".")
         if folder:
             self.dirResult.setText(folder)
 
@@ -69,7 +54,7 @@ class ImageShrinkerUI(QMainWindow):
             return
 
         exts = ['*.png', '*.jpg', '*.jpeg', '*.bmp', '*.gif']
-        self.image_paths = [img for ext in exts for img in glob.glob(os.path.join(folder, ext))]
+        self.image_paths = [os.path.normpath(img) for ext in exts for img in glob.glob(os.path.join(folder, ext))]
         total = len(self.image_paths)
         self.progressBar.setMaximum(total if total > 0 else 1)
         self.progressBar.setValue(0)
@@ -79,11 +64,16 @@ class ImageShrinkerUI(QMainWindow):
     def convert_images(self):
         width = int(self.imageWidth.text()) if self.imageWidth.text().isdigit() else 256
         height = int(self.imageHeight.text()) if self.imageHeight.text().isdigit() else 256
-        output_dir = self.dirResult.text()
+        output_dir = os.path.normpath(self.dirResult.text())
         os.makedirs(output_dir, exist_ok=True)
 
         total = len(self.image_paths)
         for i, path in enumerate(self.image_paths):
+            path = os.path.normpath(path)
+            if not os.path.exists(path):
+                self.logBrowser.append(f"[경고] 이미지 경로 없음: {path}")
+                continue
+
             img = cv2.imread(path)
             if img is None:
                 self.logBrowser.append(f"이미지 로드 실패: {path}")
@@ -167,7 +157,7 @@ class ImageShrinkerUI(QMainWindow):
             self.graphicsViewOriginal.setScene(scene_original)
             self.graphicsViewResult.setScene(scene_result)
 
-        self.logBrowser.append(f"[{current}/{total}] 변환 완료: {filename}")
+        self.logBrowser.append(f"[{current}/{total}] 변환 완료: {os.path.normpath(filename)}")
 
     def cv2_to_qimage(self, img):
         rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -183,20 +173,20 @@ class ImageShrinkerUI(QMainWindow):
             "show_process": self.checkBox.isChecked(),
             "resize_method": self.get_resize_method()
         }
-
-        save_path = resource_path("params/setting.yaml")
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-        with open(save_path, "w") as f:
+        setting_dir = resource_path("params")
+        os.makedirs(setting_dir, exist_ok=True)
+        save_path = os.path.join(setting_dir, "setting.yaml")
+        with open(save_path, "w", encoding="utf-8") as f:
             yaml.dump(data, f, allow_unicode=True)
         QMessageBox.information(self, "저장", "설정이 저장되었습니다.")
         self.load_settings()
 
     def load_settings(self):
-        path = resource_path("params/setting.yaml")
+        path = os.path.join(resource_path("params"), "setting.yaml")
         if not os.path.exists(path):
             self.logBrowser.append("설정 파일이 존재하지 않습니다.")
             return
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         self.dirOriginal.setText(data.get("input_dir", ""))
@@ -217,8 +207,7 @@ class ImageShrinkerUI(QMainWindow):
         self.logBrowser.append(f"  원본 이미지 경로: {data.get('input_dir', '')}")
         self.logBrowser.append(f"  결과 이미지 경로: {data.get('output_dir', '')}")
         self.logBrowser.append(f"  결과 크기: {data.get('width', '')} x {data.get('height', '')}")
-        self.logBrowser.append(
-            f"  과정 시각화: {'예' if data.get('show_process', False) else '아니오'}")
+        self.logBrowser.append(f"  과정 시각화: {'예' if data.get('show_process', False) else '아니오'}")
         method_labels = {
             "padding_white": "여백 채우기(흰색)",
             "padding_bg": "여백 채우기(배경색)",
@@ -226,7 +215,6 @@ class ImageShrinkerUI(QMainWindow):
             "resize": "보정 없음(찌그러질 수 있음)"
         }
         self.logBrowser.append(f"  정사각형 보정 방식: {method_labels.get(method, '알 수 없음')}")
-
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

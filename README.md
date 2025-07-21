@@ -1,7 +1,5 @@
 # ImageShrinker
 
-pyinstaller --onefile --icon=icon/run.ico --console --add-data "ui/image_shrinker.ui:ui" ImageShrinker.py
-
 ## 파이썬 설치
 - 아래 링크에 접속하여 윈도우용 파이썬을 설치한다.
 - https://www.python.org/downloads/windows/.

@@ -1,4 +1,4 @@
-@echo off
+﻿@echo off
 setlocal
 
 set PY_VER=3.10.11

@@ -11,8 +11,14 @@ set VENV_DIR=%SCRIPT_DIR%\venv
 set IMAGE_EXE=%SCRIPT_DIR%\dist\ImageShrinker.exe
 set ICON_FILE=%SCRIPT_DIR%\icon\run.ico
 set SHORTCUT_NAME=ImageShrinker.lnk
-set DESKTOP=%USERPROFILE%\Desktop
 set VBS=%TEMP%\create_shortcut.vbs
+
+:: Detect Desktop path (OneDrive or regular)
+if exist "%USERPROFILE%\OneDrive\Desktop" (
+    set DESKTOP=%USERPROFILE%\OneDrive\Desktop
+) else (
+    set DESKTOP=%USERPROFILE%\Desktop
+)
 
 echo Working directory: %SCRIPT_DIR%
 

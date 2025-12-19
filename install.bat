@@ -1,14 +1,20 @@
 @echo off
 setlocal enabledelayedexpansion
 
+:: Change to script directory (important for double-click execution)
+cd /d "%~dp0"
 
 :: Path settings
-set VENV_DIR=%cd%\venv
-set IMAGE_EXE=%cd%\dist\ImageShrinker.exe
-set ICON_FILE=%cd%\icon\run.ico
+set SCRIPT_DIR=%~dp0
+set SCRIPT_DIR=%SCRIPT_DIR:~0,-1%
+set VENV_DIR=%SCRIPT_DIR%\venv
+set IMAGE_EXE=%SCRIPT_DIR%\dist\ImageShrinker.exe
+set ICON_FILE=%SCRIPT_DIR%\icon\run.ico
 set SHORTCUT_NAME=ImageShrinker.lnk
 set DESKTOP=%USERPROFILE%\Desktop
 set VBS=%TEMP%\create_shortcut.vbs
+
+echo Working directory: %SCRIPT_DIR%
 
 echo [1/6] Checking Python installation...
 where python >nul 2>&1

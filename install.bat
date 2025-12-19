@@ -55,18 +55,23 @@ if not exist "%IMAGE_EXE%" (
 )
 
 echo [6/6] Creating desktop shortcut...
-:: Create VBS script
-> "%VBS%" echo Set oWS = CreateObject("WScript.Shell")
->> "%VBS%" echo sLinkFile = "%DESKTOP%\%SHORTCUT_NAME%"
->> "%VBS%" echo Set oLink = oWS.CreateShortcut(sLinkFile)
->> "%VBS%" echo oLink.TargetPath = "%IMAGE_EXE%"
->> "%VBS%" echo oLink.WorkingDirectory = "%cd%"
->> "%VBS%" echo oLink.IconLocation = "%ICON_FILE%"
->> "%VBS%" echo oLink.Save
+:: Create VBS script with proper quoting
+(
+echo Set oWS = CreateObject^("WScript.Shell"^)
+echo sLinkFile = "%DESKTOP%\%SHORTCUT_NAME%"
+echo Set oLink = oWS.CreateShortcut^(sLinkFile^)
+echo oLink.TargetPath = "%IMAGE_EXE%"
+echo oLink.WorkingDirectory = "%cd%"
+echo oLink.IconLocation = "%ICON_FILE%"
+echo oLink.Save
+) > "%VBS%"
 
 :: Execute shortcut creation
-cscript //nologo "%VBS%" >nul
-del "%VBS%"
+cscript //nologo "%VBS%"
+if errorlevel 1 (
+    echo [Warning] Could not create desktop shortcut. You can manually create one.
+)
+del "%VBS%" 2>nul
 
 echo.
 echo Installation and build complete. Run ImageShrinker from your desktop.
